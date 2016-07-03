@@ -7,7 +7,7 @@ import oauth2client
 from oauth2client import client
 from oauth2client import tools
 
-import datetime
+import datetime, time
 
 try:
     import argparse
@@ -45,45 +45,53 @@ def get_credentials():
         flow.user_agent = APPLICATION_NAME
         if flags:
             credentials = tools.run_flow(flow, store, flags)
-        else: # Needed only for compatibility with Python 2.6
+        else:  # Needed only for compatibility with Python 2.6
             credentials = tools.run(flow, store)
         print('Storing credentials to ' + credential_path)
     return credentials
+
 
 def main():
     """Shows basic usage of the Google Calendar API.
 
     Creates a Google Calendar API service object and outputs a list of the next
-    10 events on the user's calendar.
+    lessons
     """
 
     d = datetime.datetime.now()
-    d = d + datetime.timedelta(hours=+12)
+    d = d.replace(hour=23)
     d = d.isoformat("T") + "Z"
-
 
     credentials = get_credentials()
     http = credentials.authorize(httplib2.Http())
     service = discovery.build('calendar', 'v3', http=http)
 
-    now = datetime.datetime.utcnow().isoformat() + 'Z' # 'Z' indicates UTC time
+    now = datetime.datetime.utcnow().isoformat() + 'Z'  # 'Z' indicates UTC time
     print('Getting the upcoming 10 events')
     eventsResult = service.events().list(
         # pauf8ve9eco0pptvebol371ed4@group.calendar.google.com
         # primary
-        calendarId='primary', timeMin=now, maxResults=10, singleEvents=True,
-        timeMax=d,
+        calendarId='primary', timeMin=now, maxResults=10, singleEvents=True, timeMax=d,
         orderBy='startTime').execute()
     events = eventsResult.get('items', [])
 
     if not events:
         print('No upcoming events found.')
+    i = 1
     for event in events:
         start = event['start'].get('dateTime', event['start'].get('date'))
+
+        end = event['end'].get('dateTime', event['end'].get('date'))
+        start_f = time.strptime(start[0:19], '%Y-%m-%dT%H:%M:%S')
+        end_f = time.strptime(end[0:19], '%Y-%m-%dT%H:%M:%S')
+        sh, sm = '%02d' % start_f.tm_hour, '%02d' % start_f.tm_min
+        eh, em = '%02d' % end_f.tm_hour, '%02d' % end_f.tm_min
+
         description = event.get('description')
         location = event.get('location')
-        print(start, event['summary'], description, location)
+        print(i, 'Пара', '%s:%s' % (sh, sm,), ':', '%s:%s' % (eh, em,), event['summary'], description, location)
+        i += 1
+
 
 if __name__ == '__main__':
     main()
-
