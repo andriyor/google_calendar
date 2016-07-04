@@ -1,4 +1,6 @@
 from __future__ import print_function
+
+import telebot
 import httplib2
 import os
 
@@ -9,8 +11,11 @@ from oauth2client import tools
 
 import datetime, time
 
+bot = telebot.TeleBot("191146520:AAGfPgE2Ztq8NAyTs4_3XX7rFn30_1fcSVw")
+
 try:
     import argparse
+
     flags = argparse.ArgumentParser(parents=[tools.argparser]).parse_args()
 except ImportError:
     flags = None
@@ -52,12 +57,6 @@ def get_credentials():
 
 
 def main():
-    """Shows basic usage of the Google Calendar API.
-
-    Creates a Google Calendar API service object and outputs a list of the next
-    lessons
-    """
-
     d = datetime.datetime.now()
     mind = d.replace(hour=7)
     mind = mind.isoformat() + "+02:00"
@@ -90,12 +89,18 @@ def main():
 
         description = event.get('description')
         location = event.get('location')
-
         all_p = [i, 'Пара', '%s:%s' % (sh, sm,), ':', '%s:%s' % (eh, em,), event['summary'], description, location]
-        str_eve = (' '.join(map(str, all_p)))
+        str_eve = ('  '.join(map(str, all_p)))
         list_e = list_e + str_eve + '\n'
         i += 1
     return list_e
 
-if __name__ == '__main__':
-    print(main())
+
+@bot.message_handler(content_types=['text'])
+def handle_text(message):
+    now = datetime.datetime.now().strftime('%H:%M')
+    if "07:30" == now:
+        bot.send_message(message.chat.id, main())
+
+
+bot.polling(none_stop=True, interval=0)
